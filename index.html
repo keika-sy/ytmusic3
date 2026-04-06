@@ -179,17 +179,19 @@
 
         /* Progress Bar Animation */
         .progress-fill {
-            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff);
-            background-size: 200% 100%;
-            animation: shimmer 2s infinite;
+            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff, #06ffa5);
+            background-size: 300% 100%;
+            animation: gradient-shift 2s ease infinite;
+            box-shadow: 0 0 20px rgba(131, 56, 236, 0.5);
         }
 
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        /* Pulse Animation for Recording */
+        /* Pulse Animation */
         @keyframes pulse-ring {
             0% { transform: scale(0.8); opacity: 0.5; }
             100% { transform: scale(2); opacity: 0; }
@@ -198,8 +200,8 @@
         .pulse-ring {
             position: absolute;
             border-radius: 50%;
-            border: 2px solid rgba(255, 0, 110, 0.5);
-            animation: pulse-ring 2s infinite;
+            border: 3px solid rgba(255, 0, 110, 0.6);
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
         }
 
         /* Liquid Morphing Shape */
@@ -213,34 +215,42 @@
             50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
         }
 
-        /* Loading Animation */
-        .liquid-loader {
-            width: 60px;
-            height: 60px;
-            border: 3px solid transparent;
-            border-top-color: #ff006e;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        /* Loading Animation - Fixed */
+        .spinner-ring {
+            position: relative;
+            width: 80px;
+            height: 80px;
         }
 
-        .liquid-loader::before,
-        .liquid-loader::after {
-            content: '';
-            position: absolute;
-            border: 3px solid transparent;
-            border-radius: 50%;
+        .spinner-ring svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
         }
 
-        .liquid-loader::before {
-            top: 5px;
-            left: 5px;
-            right: 5px;
-            bottom: 5px;
-            border-top-color: #8338ec;
-            animation: spin 2s linear infinite reverse;
+        .spinner-ring circle {
+            fill: none;
+            stroke-width: 4;
+            stroke-linecap: round;
         }
 
-        @keyframes spin {
+        .spinner-ring .bg {
+            stroke: rgba(255, 255, 255, 0.1);
+        }
+
+        .spinner-ring .progress {
+            stroke: url(#gradient);
+            stroke-dasharray: 220;
+            stroke-dashoffset: 220;
+            transition: stroke-dashoffset 0.3s ease;
+        }
+
+        /* Animated spinner */
+        .spinner-animated {
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes rotate {
             to { transform: rotate(360deg); }
         }
 
@@ -346,17 +356,6 @@
             overflow: hidden;
         }
 
-        .download-progress::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            animation: shimmer 2s infinite;
-        }
-
         /* Error State */
         .error-state {
             border-color: rgba(239, 68, 68, 0.5) !important;
@@ -373,9 +372,31 @@
             pointer-events: none;
             opacity: 0.8;
         }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Smooth Progress Bar */
+        .progress-bar-smooth {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
     </style>
 </head>
 <body class="antialiased">
+
+    <!-- SVG Gradient Definition -->
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#ff006e" />
+                <stop offset="50%" stop-color="#8338ec" />
+                <stop offset="100%" stop-color="#3a86ff" />
+            </linearGradient>
+        </defs>
+    </svg>
 
     <!-- Liquid Background -->
     <div class="liquid-container">
@@ -485,44 +506,74 @@
 
                 <!-- Download Section -->
                 <div id="downloadSection" class="space-y-3 hidden">
-                    <button onclick="startDownload()" id="downloadBtn" class="w-full glass-button py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-3 relative overflow-hidden group download-progress">
+                    <button onclick="startDownload()" id="downloadBtn" class="w-full glass-button py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-3 relative overflow-hidden group">
                         <span class="relative z-10 flex items-center gap-2" id="downloadBtnContent">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                             </svg>
                             Download Now
                         </span>
-                        <div id="downloadProgress" class="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-pink-500 to-violet-500 transition-all duration-300" style="width: 0%"></div>
                     </button>
                     <p class="text-xs text-gray-500 text-center" id="downloadFilename">filename.mp3</p>
                 </div>
             </section>
 
-            <!-- Download Progress Modal -->
-            <section id="downloadModal" class="hidden glass-panel rounded-3xl p-8 text-center space-y-6 fixed inset-x-4 top-1/2 transform -translate-y-1/2 z-50 max-w-md mx-auto">
-                <div class="relative w-20 h-20 mx-auto">
-                    <div class="absolute inset-0 rounded-full border-4 border-white/10"></div>
-                    <div class="absolute inset-0 rounded-full border-4 border-t-pink-500 border-r-violet-500 border-b-transparent border-l-transparent animate-spin"></div>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <span id="modalProgressPercent" class="text-lg font-bold text-white">0%</span>
+            <!-- Download Progress Modal - Fixed -->
+            <div id="downloadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+                <div class="glass-panel rounded-3xl p-8 w-full max-w-md space-y-6 relative">
+                    <!-- Close button -->
+                    <button onclick="cancelDownload()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Spinner with Progress -->
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="spinner-ring spinner-animated">
+                            <svg viewBox="0 0 80 80">
+                                <circle class="bg" cx="40" cy="40" r="35"></circle>
+                                <circle class="progress" id="progressCircle" cx="40" cy="40" r="35"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span id="modalProgressPercent" class="text-2xl font-bold text-white">0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center space-y-1">
+                            <h3 class="text-xl font-semibold text-white">Downloading...</h3>
+                            <p class="text-sm text-gray-400" id="modalProgressDetail">Initializing download</p>
+                        </div>
                     </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                        <div id="modalProgressBar" class="progress-fill h-full rounded-full progress-bar-smooth" style="width: 0%"></div>
+                    </div>
+
+                    <!-- Size Info -->
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span id="downloadedSize">0 MB</span>
+                        <span id="totalSize">0 MB</span>
+                    </div>
+
+                    <!-- Cancel Button -->
+                    <button onclick="cancelDownload()" class="w-full glass-button py-3 rounded-xl text-red-400 hover:text-red-300 font-medium transition-colors">
+                        Cancel Download
+                    </button>
                 </div>
-                <div class="space-y-2">
-                    <h3 class="text-lg font-semibold text-white">Downloading...</h3>
-                    <p class="text-sm text-gray-400" id="modalProgressDetail">Fetching file from server</p>
-                </div>
-                <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                    <div id="modalProgressBar" class="progress-fill h-full rounded-full transition-all duration-300" style="width: 0%"></div>
-                </div>
-                <button onclick="cancelDownload()" class="text-sm text-red-400 hover:text-red-300 transition-colors">
-                    Cancel
-                </button>
-            </section>
+            </div>
 
             <!-- Loading Section -->
             <section id="loadingSection" class="hidden glass-panel rounded-3xl p-8 text-center space-y-6">
                 <div class="relative w-24 h-24 mx-auto">
-                    <div class="liquid-loader absolute inset-0"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-white/10"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-t-pink-500 border-r-violet-500 border-b-transparent border-l-transparent animate-spin"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                        </svg>
+                    </div>
                 </div>
                 <div class="space-y-2">
                     <h3 class="text-xl font-semibold text-white">Fetching Information...</h3>
@@ -682,7 +733,7 @@
         function extractVideoId(url) {
             const patterns = [
                 /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
-                /^([a-zA-Z0-9_-]{11})$/ // Direct video ID
+                /^([a-zA-Z0-9_-]{11})$/
             ];
             
             for (let pattern of patterns) {
@@ -727,7 +778,6 @@
             document.getElementById('loadingSection').classList.remove('hidden');
 
             try {
-                // Construct API URL
                 const apiUrl = `${API_BASE}?url=${encodeURIComponent(url)}`;
                 
                 const response = await fetch(apiUrl, {
@@ -776,23 +826,18 @@
         function displayVideoInfo() {
             if (!currentInfo) return;
             
-            // Update UI
             document.getElementById('videoTitle').textContent = currentInfo.title;
             document.getElementById('channelName').textContent = 'YouTube Music';
             document.getElementById('statusIndicator').className = 'w-2 h-2 bg-green-500 rounded-full';
             document.getElementById('statusText').textContent = 'Ready';
             
-            // Update thumbnail
             const thumbImg = document.getElementById('thumbnail');
-            const thumbContainer = document.getElementById('thumbnailContainer');
-            
             if (currentInfo.thumbnail) {
                 thumbImg.src = currentInfo.thumbnail;
                 thumbImg.classList.remove('hidden');
                 document.getElementById('thumbnailPlaceholder').classList.add('hidden');
             }
             
-            // Generate quality buttons
             const container = document.getElementById('qualityContainer');
             container.innerHTML = '';
             
@@ -826,7 +871,6 @@
             document.getElementById('videoInfo').classList.remove('hidden');
             document.getElementById('qualitySection').classList.remove('hidden');
             
-            // Show download section
             updateDownloadSection();
         }
 
@@ -847,7 +891,7 @@
             downloadSection.classList.remove('hidden');
         }
 
-        // Download File Directly using Fetch + Blob (No New Tab)
+        // Download File Directly using Fetch + Blob
         async function startDownload() {
             if (!selectedQuality || !currentInfo || isDownloading) return;
             
@@ -864,23 +908,15 @@
             const modal = document.getElementById('downloadModal');
             modal.classList.remove('hidden');
             
-            const btn = document.getElementById('downloadBtn');
-            const btnContent = document.getElementById('downloadBtnContent');
-            const originalBtnContent = btnContent.innerHTML;
+            // Reset progress
+            updateProgressUI(0, 0, 0);
             
+            const btn = document.getElementById('downloadBtn');
             btn.classList.add('downloading');
-            btnContent.innerHTML = `
-                <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Downloading...
-            `;
 
             try {
                 showToast('Starting download...', 'info');
                 
-                // Fetch file with progress tracking
                 const response = await fetch(downloadUrl, {
                     signal: abortController.signal,
                     headers: {
@@ -892,11 +928,9 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                // Get total size if available
                 const contentLength = response.headers.get('content-length');
                 const totalSize = contentLength ? parseInt(contentLength, 10) : 0;
                 
-                // Read response as blob with progress
                 const reader = response.body.getReader();
                 const chunks = [];
                 let receivedSize = 0;
@@ -909,45 +943,43 @@
                     chunks.push(value);
                     receivedSize += value.length;
                     
-                    // Update progress
+                    // Calculate percentage - FIXED: Use Math.round to avoid decimals
+                    let percent;
                     if (totalSize > 0) {
-                        const percent = Math.round((receivedSize / totalSize) * 100);
-                        updateProgress(percent, receivedSize, totalSize);
+                        percent = Math.round((receivedSize / totalSize) * 100);
                     } else {
-                        // Indeterminate progress
-                        updateProgress(Math.min(receivedSize / 1000000 * 10, 90), receivedSize, 0);
+                        // Indeterminate progress - cap at 95% until done
+                        percent = Math.min(Math.round((receivedSize / 1024 / 1024) * 5), 95);
                     }
+                    
+                    updateProgressUI(percent, receivedSize, totalSize);
                 }
 
                 // Combine chunks into blob
                 const blob = new Blob(chunks, { type: 'audio/mpeg' });
-                
-                // Create object URL and trigger download
                 const objectUrl = URL.createObjectURL(blob);
                 
                 // Create temporary anchor element
                 const link = document.createElement('a');
                 link.href = objectUrl;
-                link.download = currentInfo.filename; // This forces download instead of opening
+                link.download = currentInfo.filename;
                 
-                // Append to body, click, and remove
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
                 
-                // Clean up object URL after a delay
                 setTimeout(() => {
                     URL.revokeObjectURL(objectUrl);
                 }, 1000);
 
-                // Success
-                updateProgress(100, receivedSize, receivedSize);
+                // Success - show 100%
+                updateProgressUI(100, receivedSize, receivedSize);
                 showToast('Download completed!', 'success');
                 addToHistory(currentInfo.title, selectedQuality, currentInfo.url);
                 
                 setTimeout(() => {
                     closeDownloadModal();
-                }, 500);
+                }, 800);
 
             } catch (error) {
                 if (error.name === 'AbortError') {
@@ -960,24 +992,49 @@
                 isDownloading = false;
                 abortController = null;
                 btn.classList.remove('downloading');
-                btnContent.innerHTML = originalBtnContent;
             }
         }
 
-        function updateProgress(percent, received, total) {
+        // FIXED: Update progress UI with proper formatting
+        function updateProgressUI(percent, received, total) {
+            // Clamp percentage between 0-100
+            percent = Math.max(0, Math.min(100, Math.round(percent)));
+            
+            const progressCircle = document.getElementById('progressCircle');
             const progressBar = document.getElementById('modalProgressBar');
             const progressPercent = document.getElementById('modalProgressPercent');
             const progressDetail = document.getElementById('modalProgressDetail');
+            const downloadedSize = document.getElementById('downloadedSize');
+            const totalSize = document.getElementById('totalSize');
             
+            // Update circle stroke - circumference is 220 (2 * PI * 35)
+            const circumference = 220;
+            const offset = circumference - (percent / 100) * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+            
+            // Update bar
             progressBar.style.width = percent + '%';
+            
+            // Update text - FIXED: No decimals
             progressPercent.textContent = percent + '%';
             
+            // Update sizes
             const receivedMB = (received / (1024 * 1024)).toFixed(2);
+            downloadedSize.textContent = receivedMB + ' MB';
+            
             if (total > 0) {
                 const totalMB = (total / (1024 * 1024)).toFixed(2);
-                progressDetail.textContent = `${receivedMB} MB / ${totalMB} MB`;
+                totalSize.textContent = totalMB + ' MB';
+                progressDetail.textContent = `Downloading... ${percent}%`;
             } else {
-                progressDetail.textContent = `${receivedMB} MB downloaded`;
+                totalSize.textContent = 'Unknown';
+                progressDetail.textContent = `Downloaded ${receivedMB} MB`;
+            }
+            
+            // Change color based on progress
+            if (percent >= 100) {
+                progressDetail.textContent = 'Download complete!';
+                progressDetail.classList.add('text-green-400');
             }
         }
 
@@ -985,12 +1042,16 @@
             if (abortController) {
                 abortController.abort();
             }
+            closeDownloadModal();
         }
 
         function closeDownloadModal() {
             document.getElementById('downloadModal').classList.add('hidden');
-            document.getElementById('modalProgressBar').style.width = '0%';
-            document.getElementById('modalProgressPercent').textContent = '0%';
+            // Reset after animation
+            setTimeout(() => {
+                updateProgressUI(0, 0, 0);
+                document.getElementById('modalProgressDetail').classList.remove('text-green-400');
+            }, 300);
         }
 
         // Batch Mode
@@ -1033,7 +1094,6 @@
                     continue;
                 }
                 
-                // Add processing item
                 const itemId = `batch-${i}`;
                 batchList.innerHTML += `
                     <div id="${itemId}" class="glass-panel p-3 rounded-xl flex items-center justify-between">
@@ -1052,7 +1112,6 @@
                         const bestQuality = qualities[0];
                         const downloadUrl = data.download_link[bestQuality];
                         
-                        // Fetch and download directly
                         try {
                             const fileResponse = await fetch(downloadUrl);
                             const blob = await fileResponse.blob();
