@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonzai Music Downloader | Liquid Glass UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --glass-highlight: rgba(255, 255, 255, 0.3);
+            --liquid-gradient-1: #ff006e;
+            --liquid-gradient-2: #8338ec;
+            --liquid-gradient-3: #3a86ff;
+            --liquid-gradient-4: #06ffa5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #fff;
+        }
+
+        /* Animated Liquid Background */
+        .liquid-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .liquid-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .blob-1 {
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, var(--liquid-gradient-1), var(--liquid-gradient-2));
+            top: -200px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .blob-2 {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, var(--liquid-gradient-3), var(--liquid-gradient-4));
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        .blob-3 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, var(--liquid-gradient-2), var(--liquid-gradient-1));
+            top: 50%;
+            left: 50%;
+            animation-delay: -10s;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.9); }
+            75% { transform: translate(30px, 50px) scale(1.05); }
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid var(--glass-highlight);
+            border-left: 1px solid var(--glass-highlight);
+            box-shadow: 
+                0 8px 32px 0 rgba(0, 0, 0, 0.37),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-panel:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 20px 50px 0 rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-button {
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-top: 1px solid rgba(255,255,255,0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .glass-button:hover::before {
+            left: 100%;
+        }
+
+        .glass-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-color: rgba(255,255,255,0.4);
+        }
+
+        .glass-button:active {
+            transform: translateY(0);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.4);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 20px rgba(131, 56, 236, 0.3);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Progress Bar Animation */
+        .progress-fill {
+            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Pulse Animation for Recording */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        
+        .pulse-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 0, 110, 0.5);
+            animation: pulse-ring 2s infinite;
+        }
+
+        /* Liquid Morphing Shape */
+        .liquid-shape {
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            animation: morph 8s ease-in-out infinite;
+        }
+
+        @keyframes morph {
+            0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+            50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+        }
+
+        /* Loading Animation */
+        .liquid-loader {
+            width: 60px;
+            height: 60px;
+            border: 3px solid transparent;
+            border-top-color: #ff006e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .liquid-loader::before,
+        .liquid-loader::after {
+            content: '';
+            position: absolute;
+            border: 3px solid transparent;
+            border-radius: 50%;
+        }
+
+        .liquid-loader::before {
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border-top-color: #8338ec;
+            animation: spin 2s linear infinite reverse;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Glass Card Variants */
+        .glass-card-premium {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+            position: relative;
+        }
+
+        .glass-card-premium::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent, rgba(255,255,255,0.1));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        /* Quality Badge */
+        .quality-badge {
+            background: rgba(131, 56, 236, 0.3);
+            border: 1px solid rgba(131, 56, 236, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .quality-badge.active {
+            background: rgba(6, 255, 165, 0.3);
+            border-color: rgba(6, 255, 165, 0.6);
+            box-shadow: 0 0 20px rgba(6, 255, 165, 0.3);
+        }
+
+        /* Wave Animation */
+        .sound-wave {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            height: 30px;
+        }
+
+        .sound-wave span {
+            width: 3px;
+            background: linear-gradient(to top, #ff006e, #8338ec);
+            border-radius: 3px;
+            animation: wave 1s ease-in-out infinite;
+        }
+
+        .sound-wave span:nth-child(1) { animation-delay: 0s; height: 20%; }
+        .sound-wave span:nth-child(2) { animation-delay: 0.1s; height: 60%; }
+        .sound-wave span:nth-child(3) { animation-delay: 0.2s; height: 40%; }
+        .sound-wave span:nth-child(4) { animation-delay: 0.3s; height: 80%; }
+        .sound-wave span:nth-child(5) { animation-delay: 0.4s; height: 30%; }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            transform: translateX(400px);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        /* Text Gradient */
+        .text-gradient {
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Parallax Effect */
+        .parallax-layer {
+            transition: transform 0.2s ease-out;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Liquid Background -->
+    <div class="liquid-container">
+        <div class="liquid-blob blob-1"></div>
+        <div class="liquid-blob blob-2"></div>
+        <div class="liquid-blob blob-3"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="min-h-screen flex flex-col items-center justify-center p-4 relative z-10">
+        
+        <!-- Header -->
+        <header class="w-full max-w-4xl mb-8 text-center parallax-layer" data-speed="0.5">
+            <div class="glass-panel rounded-2xl p-6 mb-4 inline-block">
+                <div class="flex items-center justify-center gap-3 mb-2">
+                    <div class="liquid-shape w-12 h-12 bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-4xl font-bold font-['Space_Grotesk'] text-gradient tracking-tight">SONZAI MUSIC</h1>
+                </div>
+                <p class="text-gray-300 text-sm tracking-wider uppercase">Liquid Glass Interface</p>
+            </div>
+        </header>
+
+        <!-- Main App Interface -->
+        <main class="w-full max-w-4xl space-y-6">
+            
+            <!-- Input Section -->
+            <section class="glass-panel glass-card-premium rounded-3xl p-8 parallax-layer" data-speed="0.3">
+                <div class="flex flex-col gap-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>
+                            YouTube URL
+                        </label>
+                        <button onclick="pasteUrl()" class="text-xs text-violet-300 hover:text-violet-200 transition-colors flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            Paste
+                        </button>
+                    </div>
+                    
+                    <div class="relative group">
+                        <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." 
+                            class="glass-input w-full px-6 py-4 rounded-2xl text-white placeholder-gray-500 text-lg"
+                            onkeypress="handleEnter(event)">
+                        <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <button onclick="clearInput()" class="p-2 hover:bg-white/10 rounded-full transition-colors opacity-0 group-hover:opacity-100">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="fetchInfo()" id="fetchBtn" class="glass-button flex-1 py-4 rounded-2xl font-semibold text-white flex items-center justify-center gap-2 group">
+                            <span id="fetchBtnText">Analyze URL</span>
+                            <svg id="fetchBtnIcon" class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                            <div id="fetchLoader" class="hidden liquid-loader w-6 h-6 border-2"></div>
+                        </button>
+                        
+                        <button onclick="toggleBatchMode()" id="batchBtn" class="glass-button px-6 py-4 rounded-2xl font-medium text-gray-300 hover:text-white">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Video Info Section (Hidden by default) -->
+            <section id="videoInfo" class="hidden glass-panel rounded-3xl p-6 space-y-6 transform transition-all duration-500">
+                <div class="flex gap-4">
+                    <div class="relative w-32 h-24 rounded-xl overflow-hidden flex-shrink-0">
+                        <img id="thumbnail" src="" alt="Thumbnail" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                        <span id="duration" class="absolute bottom-1 right-1 text-xs bg-black/70 px-2 py-1 rounded-md"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 id="videoTitle" class="font-semibold text-lg text-white line-clamp-2 mb-1"></h3>
+                        <p id="channelName" class="text-sm text-gray-400 mb-2"></p>
+                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Ready to download
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quality Selection -->
+                <div class="space-y-3">
+                    <label class="text-sm font-medium text-gray-300 uppercase tracking-wider">Select Quality</label>
+                    <div class="grid grid-cols-2 gap-3" id="qualityContainer">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Download Button -->
+                <button onclick="startDownload()" id="downloadBtn" class="w-full glass-button py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-3 relative overflow-hidden group">
+                    <span class="relative z-10 flex items-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Download Now
+                    </span>
+                    <div class="absolute inset-0 bg-gradient-to-r from-pink-600/20 to-violet-600/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+            </section>
+
+            <!-- Progress Section (Hidden by default) -->
+            <section id="progressSection" class="hidden glass-panel rounded-3xl p-8 text-center space-y-6">
+                <div class="relative w-24 h-24 mx-auto">
+                    <div class="absolute inset-0 rounded-full border-4 border-white/10"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-t-pink-500 border-r-violet-500 border-b-transparent border-l-transparent animate-spin"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="progressPercent" class="text-2xl font-bold text-white">0%</span>
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <h3 class="text-xl font-semibold text-white" id="progressTitle">Downloading...</h3>
+                    <p class="text-sm text-gray-400" id="progressDetail">Initializing download</p>
+                </div>
+
+                <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                    <div id="progressBar" class="progress-fill h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span id="downloadedSize">0 MB</span>
+                    <span id="totalSize">0 MB</span>
+                </div>
+
+                <button onclick="cancelDownload()" class="text-sm text-red-400 hover:text-red-300 transition-colors">
+                    Cancel Download
+                </button>
+            </section>
+
+            <!-- Batch Mode Section (Hidden by default) -->
+            <section id="batchSection" class="hidden glass-panel rounded-3xl p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-semibold text-lg">Batch Download</h3>
+                    <button onclick="toggleBatchMode()" class="text-gray-400 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <textarea id="batchUrls" rows="4" placeholder="Enter YouTube URLs (one per line)..." 
+                    class="glass-input w-full px-4 py-3 rounded-xl text-white placeholder-gray-500 text-sm resize-none"></textarea>
+                <div class="flex gap-3">
+                    <button onclick="processBatch()" class="flex-1 glass-button py-3 rounded-xl font-semibold text-white">
+                        Process All
+                    </button>
+                    <button onclick="clearBatch()" class="glass-button px-4 py-3 rounded-xl text-gray-400 hover:text-white">
+                        Clear
+                    </button>
+                </div>
+                <div id="batchList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+            </section>
+
+            <!-- History Section -->
+            <section class="glass-panel rounded-3xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-lg flex items-center gap-2">
+                        <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Recent Downloads
+                    </h3>
+                    <button onclick="clearHistory()" class="text-xs text-gray-500 hover:text-gray-300">Clear</button>
+                </div>
+                <div id="historyList" class="space-y-3">
+                    <div class="text-center text-gray-500 py-8 text-sm">No downloads yet</div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>API: sonzaix.indevs.in • Author: Sonzai X シ</p>
+            <div class="flex items-center justify-center gap-4 mt-2">
+                <a href="https://t.me/November2k" target="_blank" class="hover:text-white transition-colors">Telegram</a>
+                <span>•</span>
+                <span>Liquid Glass UI v2.0</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // State Management
+        let currentInfo = null;
+        let selectedQuality = null;
+        let downloadHistory = JSON.parse(localStorage.getItem('downloadHistory') || '[]');
+        let isDownloading = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderHistory();
+            initParallax();
+        });
+
+        // Parallax Effect
+        function initParallax() {
+            document.addEventListener('mousemove', (e) => {
+                const layers = document.querySelectorAll('.parallax-layer');
+                const x = (window.innerWidth - e.pageX * 2) / 100;
+                const y = (window.innerHeight - e.pageY * 2) / 100;
+                
+                layers.forEach(layer => {
+                    const speed = layer.getAttribute('data-speed') || 0.5;
+                    const xPos = x * speed;
+                    const yPos = y * speed;
+                    layer.style.transform = `translateX(${xPos}px) translateY(${yPos}px)`;
+                });
+            });
+        }
+
+        // Utility Functions
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'border-green-500/50 bg-green-500/10',
+                error: 'border-red-500/50 bg-red-500/10',
+                info: 'border-blue-500/50 bg-blue-500/10'
+            };
+            
+            toast.className = `toast glass-panel ${colors[type]} border-l-4 p-4 rounded-xl flex items-center gap-3 min-w-[300px]`;
+            toast.innerHTML = `
+                <div class="sound-wave w-8">
+                    <span></span><span></span><span></span>
+                </div>
+                <span class="text-sm font-medium">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') fetchInfo();
+        }
+
+        async function pasteUrl() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('youtubeUrl').value = text;
+                showToast('URL pasted successfully', 'success');
+            } catch (err) {
+                showToast('Failed to paste URL', 'error');
+            }
+        }
+
+        function clearInput() {
+            document.getElementById('youtubeUrl').value = '';
+            document.getElementById('videoInfo').classList.add('hidden');
+        }
+
+        // Fetch Video Info
+        async function fetchInfo() {
+            const url = document.getElementById('youtubeUrl').value.trim();
+            if (!url) {
+                showToast('Please enter a YouTube URL', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('fetchBtn');
+            const btnText = document.getElementById('fetchBtnText');
+            const btnIcon = document.getElementById('fetchBtnIcon');
+            const loader = document.getElementById('fetchLoader');
+
+            btn.disabled = true;
+            btnText.textContent = 'Analyzing...';
+            btnIcon.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            try {
+                // Simulating API call (replace with actual API)
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Mock data for demo (replace with actual API response)
+                currentInfo = {
+                    title: "Sample Music Track - Artist Name",
+                    channel: "Music Channel",
+                    thumbnail: "https://i.ytimg.com/vi/placeholder/maxresdefault.jpg",
+                    duration: "3:45",
+                    downloads: {
+                        '320kbps': { url: '#', size: '8.5 MB' },
+                        '128kbps': { url: '#', size: '3.2 MB' }
+                    }
+                };
+
+                displayVideoInfo();
+                showToast('Video info loaded', 'success');
+            } catch (error) {
+                showToast('Failed to fetch video info', 'error');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Analyze URL';
+                btnIcon.classList.remove('hidden');
+                loader.classList.add('hidden');
+            }
+        }
+
+        function displayVideoInfo() {
+            if (!currentInfo) return;
+            
+            document.getElementById('videoTitle').textContent = currentInfo.title;
+            document.getElementById('channelName').textContent = currentInfo.channel;
+            document.getElementById('thumbnail').src = currentInfo.thumbnail;
+            document.getElementById('duration').textContent = currentInfo.duration;
+            
+            // Generate quality buttons
+            const container = document.getElementById('qualityContainer');
+            container.innerHTML = '';
+            
+            Object.entries(currentInfo.downloads).forEach(([quality, data], index) => {
+                const btn = document.createElement('button');
+                btn.className = `quality-badge p-4 rounded-xl text-left transition-all duration-300 ${index === 0 ? 'active' : ''}`;
+                btn.onclick = () => selectQuality(quality, btn);
+                btn.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-white">${quality}</span>
+                        ${index === 0 ? '<span class="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">Best</span>' : ''}
+                    </div>
+                    <div class="text-xs text-gray-400">${data.size}</div>
+                `;
+                if (index === 0) selectedQuality = quality;
+                container.appendChild(btn);
+            });
+            
+            document.getElementById('videoInfo').classList.remove('hidden');
+            document.getElementById('videoInfo').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function selectQuality(quality, btn) {
+            selectedQuality = quality;
+            document.querySelectorAll('.quality-badge').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // Download Simulation
+        async function startDownload() {
+            if (!selectedQuality || !currentInfo) return;
+            
+            document.getElementById('videoInfo').classList.add('hidden');
+            document.getElementById('progressSection').classList.remove('hidden');
+            
+            isDownloading = true;
+            let progress = 0;
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            const progressDetail = document.getElementById('progressDetail');
+            
+            // Simulate download progress
+            const interval = setInterval(() => {
+                if (!isDownloading) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    completeDownload();
+                }
+                
+                progressBar.style.width = progress + '%';
+                progressPercent.textContent = Math.floor(progress) + '%';
+                
+                // Update details based on progress
+                if (progress < 30) progressDetail.textContent = 'Connecting to server...';
+                else if (progress < 60) progressDetail.textContent = 'Downloading audio stream...';
+                else if (progress < 90) progressDetail.textContent = 'Processing file...';
+                else progressDetail.textContent = 'Finalizing...';
+                
+                document.getElementById('downloadedSize').textContent = 
+                    Math.floor((progress / 100) * parseFloat(currentInfo.downloads[selectedQuality].size)) + ' MB';
+                document.getElementById('totalSize').textContent = currentInfo.downloads[selectedQuality].size;
+                
+            }, 500);
+        }
+
+        function completeDownload() {
+            setTimeout(() => {
+                showToast('Download completed!', 'success');
+                addToHistory(currentInfo.title, selectedQuality);
+                document.getElementById('progressSection').classList.add('hidden');
+                document.getElementById('videoInfo').classList.remove('hidden');
+                isDownloading = false;
+            }, 500);
+        }
+
+        function cancelDownload() {
+            isDownloading = false;
+            document.getElementById('progressSection').classList.add('hidden');
+            document.getElementById('videoInfo').classList.remove('hidden');
+            showToast('Download cancelled', 'info');
+        }
+
+        // Batch Mode
+        function toggleBatchMode() {
+            const batchSection = document.getElementById('batchSection');
+            const videoInfo = document.getElementById('videoInfo');
+            
+            if (batchSection.classList.contains('hidden')) {
+                batchSection.classList.remove('hidden');
+                videoInfo.classList.add('hidden');
+            } else {
+                batchSection.classList.add('hidden');
+            }
+        }
+
+        function processBatch() {
+            const urls = document.getElementById('batchUrls').value.split('\n').filter(u => u.trim());
+            if (urls.length === 0) {
+                showToast('Please enter at least one URL', 'error');
+                return;
+            }
+            
+            showToast(`Processing ${urls.length} URLs...`, 'info');
+            // Implement batch processing logic here
+        }
+
+        function clearBatch() {
+            document.getElementById('batchUrls').value = '';
+            document.getElementById('batchList').innerHTML = '';
+        }
+
+        // History Management
+        function addToHistory(title, quality) {
+            const item = {
+                title,
+                quality,
+                date: new Date().toLocaleString(),
+                id: Date.now()
+            };
+            downloadHistory.unshift(item);
+            if (downloadHistory.length > 10) downloadHistory.pop();
+            localStorage.setItem('downloadHistory', JSON.stringify(downloadHistory));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            if (downloadHistory.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8 text-sm">No downloads yet</div>';
+                return;
+            }
+            
+            container.innerHTML = downloadHistory.map(item => `
+                <div class="glass-panel rounded-xl p-3 flex items-center justify-between group hover:bg-white/10 transition-colors">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-pink-500/20 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-sm font-medium text-white truncate">${item.title}</div>
+                            <div class="text-xs text-gray-500">${item.quality} • ${item.date}</div>
+                        </div>
+                    </div>
+                    <button onclick="removeFromHistory(${item.id})" class="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/20 rounded-lg transition-all">
+                        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeFromHistory(id) {
+            downloadHistory = downloadHistory.filter(item => item.id !== id);
+            localStorage.setItem('downloadHistory', JSON.stringify(downloadHistory));
+            renderHistory();
+        }
+
+        function clearHistory() {
+            downloadHistory = [];
+            localStorage.removeItem('downloadHistory');
+            renderHistory();
+            showToast('History cleared', 'info');
+        }
+
+        // Service Worker for offline support (optional enhancement)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:text/javascript,').catch(() => {});
+        }
+    </script>
+</body>
+</html>
