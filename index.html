@@ -142,6 +142,12 @@
             transform: translateY(0);
         }
 
+        .glass-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .glass-input {
             background: rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(20px);
@@ -263,6 +269,12 @@
             background: rgba(131, 56, 236, 0.3);
             border: 1px solid rgba(131, 56, 236, 0.5);
             backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .quality-badge:hover {
+            transform: translateY(-2px);
+            background: rgba(131, 56, 236, 0.4);
         }
 
         .quality-badge.active {
@@ -319,6 +331,46 @@
         .parallax-layer {
             transition: transform 0.2s ease-out;
         }
+
+        /* Thumbnail Placeholder */
+        .thumbnail-placeholder {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Download Link Button */
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, rgba(6, 255, 165, 0.2), rgba(6, 255, 165, 0.1));
+            border: 1px solid rgba(6, 255, 165, 0.5);
+            border-radius: 12px;
+            color: #06ffa5;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .download-link:hover {
+            background: linear-gradient(135deg, rgba(6, 255, 165, 0.3), rgba(6, 255, 165, 0.2));
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(6, 255, 165, 0.2);
+        }
+
+        /* Error State */
+        .error-state {
+            border-color: rgba(239, 68, 68, 0.5) !important;
+            background: rgba(239, 68, 68, 0.1) !important;
+        }
+
+        /* Success State */
+        .success-state {
+            border-color: rgba(6, 255, 165, 0.5) !important;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -359,7 +411,7 @@
                             <span class="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>
                             YouTube URL
                         </label>
-                        <button onclick="pasteUrl()" class="text-xs text-violet-300 hover:text-violet-200 transition-colors flex items-center gap-1">
+                        <button onclick="pasteUrl()" class="text-xs text-violet-300 hover:text-violet-200 transition-colors flex items-center gap-1 glass-button px-3 py-1 rounded-full">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                             </svg>
@@ -386,7 +438,7 @@
                             <svg id="fetchBtnIcon" class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                             </svg>
-                            <div id="fetchLoader" class="hidden liquid-loader w-6 h-6 border-2"></div>
+                            <div id="fetchLoader" class="hidden w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                         </button>
                         
                         <button onclick="toggleBatchMode()" id="batchBtn" class="glass-button px-6 py-4 rounded-2xl font-medium text-gray-300 hover:text-white">
@@ -401,68 +453,67 @@
             <!-- Video Info Section (Hidden by default) -->
             <section id="videoInfo" class="hidden glass-panel rounded-3xl p-6 space-y-6 transform transition-all duration-500">
                 <div class="flex gap-4">
-                    <div class="relative w-32 h-24 rounded-xl overflow-hidden flex-shrink-0">
-                        <img id="thumbnail" src="" alt="Thumbnail" class="w-full h-full object-cover">
+                    <div class="relative w-32 h-24 rounded-xl overflow-hidden flex-shrink-0 thumbnail-placeholder" id="thumbnailContainer">
+                        <img id="thumbnail" src="" alt="Thumbnail" class="w-full h-full object-cover hidden" onload="this.classList.remove('hidden'); document.getElementById('thumbnailPlaceholder').classList.add('hidden');" onerror="handleImageError()">
+                        <div id="thumbnailPlaceholder" class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                            </svg>
+                        </div>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                        <span id="duration" class="absolute bottom-1 right-1 text-xs bg-black/70 px-2 py-1 rounded-md"></span>
+                        <span id="duration" class="absolute bottom-1 right-1 text-xs bg-black/70 px-2 py-1 rounded-md hidden"></span>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h3 id="videoTitle" class="font-semibold text-lg text-white line-clamp-2 mb-1"></h3>
-                        <p id="channelName" class="text-sm text-gray-400 mb-2"></p>
+                        <h3 id="videoTitle" class="font-semibold text-lg text-white line-clamp-2 mb-1">Loading...</h3>
+                        <p id="channelName" class="text-sm text-gray-400 mb-2">-</p>
                         <div class="flex items-center gap-2 text-xs text-gray-500">
-                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                            Ready to download
+                            <span id="statusIndicator" class="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                            <span id="statusText">Analyzing...</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quality Selection -->
-                <div class="space-y-3">
+                <div class="space-y-3" id="qualitySection">
                     <label class="text-sm font-medium text-gray-300 uppercase tracking-wider">Select Quality</label>
                     <div class="grid grid-cols-2 gap-3" id="qualityContainer">
                         <!-- Generated dynamically -->
                     </div>
                 </div>
 
-                <!-- Download Button -->
-                <button onclick="startDownload()" id="downloadBtn" class="w-full glass-button py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-3 relative overflow-hidden group">
-                    <span class="relative z-10 flex items-center gap-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                        </svg>
-                        Download Now
-                    </span>
-                    <div class="absolute inset-0 bg-gradient-to-r from-pink-600/20 to-violet-600/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </button>
-            </section>
-
-            <!-- Progress Section (Hidden by default) -->
-            <section id="progressSection" class="hidden glass-panel rounded-3xl p-8 text-center space-y-6">
-                <div class="relative w-24 h-24 mx-auto">
-                    <div class="absolute inset-0 rounded-full border-4 border-white/10"></div>
-                    <div class="absolute inset-0 rounded-full border-4 border-t-pink-500 border-r-violet-500 border-b-transparent border-l-transparent animate-spin"></div>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <span id="progressPercent" class="text-2xl font-bold text-white">0%</span>
+                <!-- Download Section -->
+                <div id="downloadSection" class="space-y-3 hidden">
+                    <div class="p-4 rounded-2xl bg-green-500/10 border border-green-500/30">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-green-400">Ready to Download</div>
+                                <div class="text-xs text-gray-400" id="downloadFilename">filename.mp3</div>
+                            </div>
+                        </div>
+                        <a id="downloadLink" href="#" target="_blank" class="download-link w-full justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            Download Now
+                        </a>
                     </div>
                 </div>
-                
+            </section>
+
+            <!-- Loading Section -->
+            <section id="loadingSection" class="hidden glass-panel rounded-3xl p-8 text-center space-y-6">
+                <div class="relative w-24 h-24 mx-auto">
+                    <div class="liquid-loader absolute inset-0"></div>
+                </div>
                 <div class="space-y-2">
-                    <h3 class="text-xl font-semibold text-white" id="progressTitle">Downloading...</h3>
-                    <p class="text-sm text-gray-400" id="progressDetail">Initializing download</p>
+                    <h3 class="text-xl font-semibold text-white">Fetching Information...</h3>
+                    <p class="text-sm text-gray-400">Please wait while we analyze the video</p>
                 </div>
-
-                <div class="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                    <div id="progressBar" class="progress-fill h-full rounded-full transition-all duration-300" style="width: 0%"></div>
-                </div>
-
-                <div class="flex justify-between text-xs text-gray-500">
-                    <span id="downloadedSize">0 MB</span>
-                    <span id="totalSize">0 MB</span>
-                </div>
-
-                <button onclick="cancelDownload()" class="text-sm text-red-400 hover:text-red-300 transition-colors">
-                    Cancel Download
-                </button>
             </section>
 
             <!-- Batch Mode Section (Hidden by default) -->
@@ -524,8 +575,11 @@
         // State Management
         let currentInfo = null;
         let selectedQuality = null;
-        let downloadHistory = JSON.parse(localStorage.getItem('downloadHistory') || '[]');
-        let isDownloading = false;
+        let downloadHistory = JSON.parse(localStorage.getItem('sonzai_history') || '[]');
+        let isProcessing = false;
+
+        // API Configuration
+        const API_BASE = 'https://api.sonzaix.indevs.in/youtube/music';
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -591,17 +645,58 @@
 
         function clearInput() {
             document.getElementById('youtubeUrl').value = '';
-            document.getElementById('videoInfo').classList.add('hidden');
+            hideVideoInfo();
         }
 
-        // Fetch Video Info
+        function hideVideoInfo() {
+            document.getElementById('videoInfo').classList.add('hidden');
+            document.getElementById('loadingSection').classList.add('hidden');
+            currentInfo = null;
+            selectedQuality = null;
+        }
+
+        function handleImageError() {
+            const img = document.getElementById('thumbnail');
+            const placeholder = document.getElementById('thumbnailPlaceholder');
+            img.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+        }
+
+        // Extract YouTube Video ID
+        function extractVideoId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
+                /^([a-zA-Z0-9_-]{11})$/ // Direct video ID
+            ];
+            
+            for (let pattern of patterns) {
+                const match = url.match(pattern);
+                if (match && match[1] && match[1].length === 11) {
+                    return match[1];
+                }
+            }
+            return null;
+        }
+
+        // Fetch Video Info from API
         async function fetchInfo() {
             const url = document.getElementById('youtubeUrl').value.trim();
+            
             if (!url) {
                 showToast('Please enter a YouTube URL', 'error');
                 return;
             }
 
+            const videoId = extractVideoId(url);
+            if (!videoId) {
+                showToast('Invalid YouTube URL', 'error');
+                return;
+            }
+
+            if (isProcessing) return;
+            isProcessing = true;
+
+            // UI Updates
             const btn = document.getElementById('fetchBtn');
             const btnText = document.getElementById('fetchBtnText');
             const btnIcon = document.getElementById('fetchBtnIcon');
@@ -611,28 +706,50 @@
             btnText.textContent = 'Analyzing...';
             btnIcon.classList.add('hidden');
             loader.classList.remove('hidden');
+            
+            hideVideoInfo();
+            document.getElementById('loadingSection').classList.remove('hidden');
 
             try {
-                // Simulating API call (replace with actual API)
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                // Construct API URL
+                const apiUrl = `${API_BASE}?url=${encodeURIComponent(url)}`;
                 
-                // Mock data for demo (replace with actual API response)
-                currentInfo = {
-                    title: "Sample Music Track - Artist Name",
-                    channel: "Music Channel",
-                    thumbnail: "https://i.ytimg.com/vi/placeholder/maxresdefault.jpg",
-                    duration: "3:45",
-                    downloads: {
-                        '320kbps': { url: '#', size: '8.5 MB' },
-                        '128kbps': { url: '#', size: '3.2 MB' }
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
                     }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                if (data.error || !data.download_link) {
+                    throw new Error(data.message || 'Failed to fetch video info');
+                }
+
+                currentInfo = {
+                    title: data.title || data.filename || 'Unknown Title',
+                    filename: data.filename || 'download.mp3',
+                    thumbnail: data.thumbnail || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                    videoId: videoId,
+                    downloads: data.download_link,
+                    url: url
                 };
 
                 displayVideoInfo();
-                showToast('Video info loaded', 'success');
+                showToast('Video info loaded successfully', 'success');
+
             } catch (error) {
-                showToast('Failed to fetch video info', 'error');
+                console.error('Error:', error);
+                showToast(error.message || 'Failed to fetch video info', 'error');
+                document.getElementById('loadingSection').classList.add('hidden');
             } finally {
+                isProcessing = false;
                 btn.disabled = false;
                 btnText.textContent = 'Analyze URL';
                 btnIcon.classList.remove('hidden');
@@ -643,114 +760,104 @@
         function displayVideoInfo() {
             if (!currentInfo) return;
             
+            // Update UI
             document.getElementById('videoTitle').textContent = currentInfo.title;
-            document.getElementById('channelName').textContent = currentInfo.channel;
-            document.getElementById('thumbnail').src = currentInfo.thumbnail;
-            document.getElementById('duration').textContent = currentInfo.duration;
+            document.getElementById('channelName').textContent = 'YouTube Music';
+            document.getElementById('statusIndicator').className = 'w-2 h-2 bg-green-500 rounded-full';
+            document.getElementById('statusText').textContent = 'Ready';
+            
+            // Update thumbnail
+            const thumbImg = document.getElementById('thumbnail');
+            const thumbContainer = document.getElementById('thumbnailContainer');
+            
+            if (currentInfo.thumbnail) {
+                thumbImg.src = currentInfo.thumbnail;
+                thumbImg.classList.remove('hidden');
+                document.getElementById('thumbnailPlaceholder').classList.add('hidden');
+            }
             
             // Generate quality buttons
             const container = document.getElementById('qualityContainer');
             container.innerHTML = '';
             
-            Object.entries(currentInfo.downloads).forEach(([quality, data], index) => {
+            const qualities = Object.keys(currentInfo.downloads);
+            
+            if (qualities.length === 0) {
+                showToast('No download links available', 'error');
+                return;
+            }
+            
+            qualities.forEach((quality, index) => {
                 const btn = document.createElement('button');
                 btn.className = `quality-badge p-4 rounded-xl text-left transition-all duration-300 ${index === 0 ? 'active' : ''}`;
                 btn.onclick = () => selectQuality(quality, btn);
+                
+                const isHighQuality = quality.includes('320') || quality.includes('high');
+                
                 btn.innerHTML = `
                     <div class="flex items-center justify-between mb-1">
                         <span class="font-bold text-white">${quality}</span>
-                        ${index === 0 ? '<span class="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">Best</span>' : ''}
+                        ${isHighQuality ? '<span class="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">HD</span>' : ''}
                     </div>
-                    <div class="text-xs text-gray-400">${data.size}</div>
+                    <div class="text-xs text-gray-400">MP3 Format</div>
                 `;
+                
                 if (index === 0) selectedQuality = quality;
                 container.appendChild(btn);
             });
             
+            document.getElementById('loadingSection').classList.add('hidden');
             document.getElementById('videoInfo').classList.remove('hidden');
-            document.getElementById('videoInfo').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            document.getElementById('qualitySection').classList.remove('hidden');
+            
+            // Show download section
+            updateDownloadSection();
         }
 
         function selectQuality(quality, btn) {
             selectedQuality = quality;
             document.querySelectorAll('.quality-badge').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            updateDownloadSection();
         }
 
-        // Download Simulation
-        async function startDownload() {
+        function updateDownloadSection() {
             if (!selectedQuality || !currentInfo) return;
             
-            document.getElementById('videoInfo').classList.add('hidden');
-            document.getElementById('progressSection').classList.remove('hidden');
+            const downloadUrl = currentInfo.downloads[selectedQuality];
+            const downloadSection = document.getElementById('downloadSection');
+            const downloadLink = document.getElementById('downloadLink');
+            const filename = document.getElementById('downloadFilename');
             
-            isDownloading = true;
-            let progress = 0;
-            const progressBar = document.getElementById('progressBar');
-            const progressPercent = document.getElementById('progressPercent');
-            const progressDetail = document.getElementById('progressDetail');
+            downloadLink.href = downloadUrl;
+            downloadLink.download = currentInfo.filename;
+            filename.textContent = currentInfo.filename;
             
-            // Simulate download progress
-            const interval = setInterval(() => {
-                if (!isDownloading) {
-                    clearInterval(interval);
-                    return;
-                }
-                
-                progress += Math.random() * 15;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(interval);
-                    completeDownload();
-                }
-                
-                progressBar.style.width = progress + '%';
-                progressPercent.textContent = Math.floor(progress) + '%';
-                
-                // Update details based on progress
-                if (progress < 30) progressDetail.textContent = 'Connecting to server...';
-                else if (progress < 60) progressDetail.textContent = 'Downloading audio stream...';
-                else if (progress < 90) progressDetail.textContent = 'Processing file...';
-                else progressDetail.textContent = 'Finalizing...';
-                
-                document.getElementById('downloadedSize').textContent = 
-                    Math.floor((progress / 100) * parseFloat(currentInfo.downloads[selectedQuality].size)) + ' MB';
-                document.getElementById('totalSize').textContent = currentInfo.downloads[selectedQuality].size;
-                
-            }, 500);
-        }
-
-        function completeDownload() {
-            setTimeout(() => {
-                showToast('Download completed!', 'success');
-                addToHistory(currentInfo.title, selectedQuality);
-                document.getElementById('progressSection').classList.add('hidden');
-                document.getElementById('videoInfo').classList.remove('hidden');
-                isDownloading = false;
-            }, 500);
-        }
-
-        function cancelDownload() {
-            isDownloading = false;
-            document.getElementById('progressSection').classList.add('hidden');
-            document.getElementById('videoInfo').classList.remove('hidden');
-            showToast('Download cancelled', 'info');
+            downloadSection.classList.remove('hidden');
+            
+            // Add click handler for download tracking
+            downloadLink.onclick = () => {
+                addToHistory(currentInfo.title, selectedQuality, currentInfo.url);
+                showToast('Download started!', 'success');
+            };
         }
 
         // Batch Mode
         function toggleBatchMode() {
             const batchSection = document.getElementById('batchSection');
             const videoInfo = document.getElementById('videoInfo');
+            const loadingSection = document.getElementById('loadingSection');
             
             if (batchSection.classList.contains('hidden')) {
                 batchSection.classList.remove('hidden');
                 videoInfo.classList.add('hidden');
+                loadingSection.classList.add('hidden');
             } else {
                 batchSection.classList.add('hidden');
             }
         }
 
-        function processBatch() {
+        async function processBatch() {
             const urls = document.getElementById('batchUrls').value.split('\n').filter(u => u.trim());
             if (urls.length === 0) {
                 showToast('Please enter at least one URL', 'error');
@@ -758,7 +865,67 @@
             }
             
             showToast(`Processing ${urls.length} URLs...`, 'info');
-            // Implement batch processing logic here
+            const batchList = document.getElementById('batchList');
+            batchList.innerHTML = '';
+            
+            for (let i = 0; i < urls.length; i++) {
+                const url = urls[i].trim();
+                const videoId = extractVideoId(url);
+                
+                if (!videoId) {
+                    batchList.innerHTML += `
+                        <div class="glass-panel p-3 rounded-xl flex items-center justify-between border-l-4 border-red-500">
+                            <span class="text-sm text-gray-400 truncate">Invalid URL: ${url.substring(0, 30)}...</span>
+                            <span class="text-xs text-red-400">Error</span>
+                        </div>
+                    `;
+                    continue;
+                }
+                
+                // Add processing item
+                const itemId = `batch-${i}`;
+                batchList.innerHTML += `
+                    <div id="${itemId}" class="glass-panel p-3 rounded-xl flex items-center justify-between">
+                        <span class="text-sm text-gray-300 truncate">${url}</span>
+                        <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    </div>
+                `;
+                
+                try {
+                    const apiUrl = `${API_BASE}?url=${encodeURIComponent(url)}`;
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+                    
+                    if (data.download_link) {
+                        const qualities = Object.keys(data.download_link);
+                        const bestQuality = qualities[0];
+                        const downloadUrl = data.download_link[bestQuality];
+                        
+                        document.getElementById(itemId).innerHTML = `
+                            <div class="flex items-center justify-between w-full">
+                                <div class="min-w-0">
+                                    <div class="text-sm text-white truncate">${data.title || data.filename}</div>
+                                    <div class="text-xs text-gray-500">${bestQuality}</div>
+                                </div>
+                                <a href="${downloadUrl}" target="_blank" class="text-xs bg-green-500/20 text-green-400 px-3 py-1 rounded-full hover:bg-green-500/30 transition-colors">
+                                    Download
+                                </a>
+                            </div>
+                        `;
+                        document.getElementById(itemId).classList.add('border-l-4', 'border-green-500');
+                    } else {
+                        throw new Error('No download links');
+                    }
+                } catch (error) {
+                    document.getElementById(itemId).innerHTML = `
+                        <span class="text-sm text-gray-400 truncate">${url}</span>
+                        <span class="text-xs text-red-400">Failed</span>
+                    `;
+                    document.getElementById(itemId).classList.add('border-l-4', 'border-red-500');
+                }
+            }
+            
+            showToast('Batch processing completed', 'success');
         }
 
         function clearBatch() {
@@ -767,16 +934,17 @@
         }
 
         // History Management
-        function addToHistory(title, quality) {
+        function addToHistory(title, quality, url) {
             const item = {
                 title,
                 quality,
+                url,
                 date: new Date().toLocaleString(),
                 id: Date.now()
             };
             downloadHistory.unshift(item);
             if (downloadHistory.length > 10) downloadHistory.pop();
-            localStorage.setItem('downloadHistory', JSON.stringify(downloadHistory));
+            localStorage.setItem('sonzai_history', JSON.stringify(downloadHistory));
             renderHistory();
         }
 
@@ -811,20 +979,15 @@
 
         function removeFromHistory(id) {
             downloadHistory = downloadHistory.filter(item => item.id !== id);
-            localStorage.setItem('downloadHistory', JSON.stringify(downloadHistory));
+            localStorage.setItem('sonzai_history', JSON.stringify(downloadHistory));
             renderHistory();
         }
 
         function clearHistory() {
             downloadHistory = [];
-            localStorage.removeItem('downloadHistory');
+            localStorage.removeItem('sonzai_history');
             renderHistory();
             showToast('History cleared', 'info');
-        }
-
-        // Service Worker for offline support (optional enhancement)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('data:text/javascript,').catch(() => {});
         }
     </script>
 </body>
